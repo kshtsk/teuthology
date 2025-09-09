@@ -96,7 +96,7 @@ class TestDispatcher(object):
     @patch("teuthology.dispatcher.find_dispatcher_processes")
     @patch("teuthology.repo_utils.ls_remote")
     @patch("teuthology.dispatcher.report.try_push_job_info")
-    @patch("teuthology.dispatcher.supervisor.run_job")
+    @patch("subprocess.Popen")
     @patch("beanstalkc.Job", autospec=True)
     @patch("teuthology.repo_utils.fetch_qa_suite")
     @patch("teuthology.repo_utils.fetch_teuthology")
@@ -106,7 +106,7 @@ class TestDispatcher(object):
     @patch("teuthology.dispatcher.setup_log_file")
     def test_main_loop(
         self, m_setup_log_file, m_isdir, m_connect, m_watch_tube,
-        m_fetch_teuthology, m_fetch_qa_suite, m_job, m_run_job,
+        m_fetch_teuthology, m_fetch_qa_suite, m_job, m_popen,
         m_try_push_job_info, m_ls_remote, m_find_dispatcher_processes,
                        ):
         m_find_dispatcher_processes.return_value = {}
@@ -121,6 +121,13 @@ class TestDispatcher(object):
         )
         m_connection.reserve.side_effect = jobs
         m_connect.return_value = m_connection
+
+        m_popen_poll = Mock()
+        m_popen_poll.return_value = 0
+        m_popen_obj = Mock()
+        m_popen_obj.returncode = 0
+        m_popen_obj.poll = m_popen_poll
+        m_popen.return_value = m_popen_obj
         dispatcher.main(self.ctx)
         # There should be one reserve call per item in the jobs list
         expected_reserve_calls = [
