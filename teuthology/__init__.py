@@ -29,6 +29,8 @@ for arg in sys.argv:
         patch_threads=False
 monkey.patch_all(
     dns=False,
+    # For uv do not patch ssl
+    ssl=False,
     # Don't patch subprocess to avoid http://tracker.ceph.com/issues/14990
     subprocess=False,
     thread=patch_threads,
