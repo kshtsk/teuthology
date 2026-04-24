@@ -999,13 +999,30 @@ def deep_merge(a: DeepMerge, b: DeepMerge) -> DeepMerge:
     if a is None:
         return deep_merge(b.__class__(), b)
     if isinstance(a, list):
-        assert isinstance(b, list)
+        if not isinstance(b, list):
+            raise ValueError(f"Expected list instead of: {b}")
         a.extend(b)
         return a
     if isinstance(a, dict):
-        assert isinstance(b, dict)
+        if not isinstance(b, dict):
+            raise ValueError(f"Expected dict instead of: {b}")
         for (k, v) in b.items():
-            a[k] = deep_merge(a.get(k), v)
+            try:
+                ak = a.get(k)
+                if k == 'extra_system_packages':
+                    if ak and isinstance(v, list):
+                        vv = dict(deb=v, rpm=v)
+                        log.warning(f"While merging {ak} got type mismatch for '{k}', converted list {v} to dict {vv}")
+                    else:
+                        vv = v
+                    a[k] = deep_merge(ak, vv)
+                else:
+                    a[k] = deep_merge(ak, v)
+            except ValueError:
+                log.error(f"Failed to deep_merge for {k}")
+                if k == 'extra_system_packages':
+                    log.error(f'Could not merge: {v} to {ak}')
+                raise
         return a
     return b
 
